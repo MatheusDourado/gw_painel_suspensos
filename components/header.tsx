@@ -54,13 +54,8 @@ export function Header({ tickets, onSelectTicket }: HeaderProps) {
             <header className="sticky top-0 z-50 border-b border-border bg-sidebar px-6 py-3">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-                            <span className="text-sm font-bold text-primary-foreground">
-                                ST
-                            </span>
-                        </div>
                         <span className="text-lg font-semibold text-foreground">
-                            Dashboard Chamados Suspensos
+                            Monitoramento de Chamados Suspensos
                         </span>
                         <Badge
                             variant="outline"
@@ -78,9 +73,6 @@ export function Header({ tickets, onSelectTicket }: HeaderProps) {
                         >
                             <Search className="mr-2 h-4 w-4" />
                             Buscar chamados...
-                            {/* <kbd className="ml-auto pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-                <span className="text-xs">⌘</span>K
-              </kbd> */}
                         </Button>
 
                         <Button

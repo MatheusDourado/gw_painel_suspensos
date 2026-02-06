@@ -156,15 +156,6 @@ export function SidebarNav({
                     <div className="text-xs font-medium uppercase text-muted-foreground px-3 mb-2">
                         Status Rápido
                     </div>
-                    <div className="flex items-center justify-between rounded-md bg-destructive/10 px-3 py-2">
-                        <div className="flex items-center gap-2">
-                            <AlertTriangle className="h-4 w-4 text-destructive" />
-                            <span className="text-sm">Críticos</span>
-                        </div>
-                        <Badge variant="destructive">
-                            {statusCounts.critical}
-                        </Badge>
-                    </div>
                     <div className="flex items-center justify-between rounded-md bg-warning/10 px-3 py-2">
                         <div className="flex items-center gap-2">
                             <Clock className="h-4 w-4 text-warning" />
