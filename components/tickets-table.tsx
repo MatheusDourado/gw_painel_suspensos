@@ -41,7 +41,7 @@ interface TicketsTableProps {
 const getPriorityClass = (priority: string) => {
 	const normalized = normalizePriority(priority);
 	if (normalized === 'critica')
-		return 'bg-destructive text-destructive-foreground';
+		return '_bg-destructive text-destructive-foreground';
 	if (normalized === 'alta') return 'bg-warning text-foreground';
 	if (normalized === 'media') return 'bg-primary text-primary-foreground';
 	if (normalized === 'baixa') return 'bg-muted text-muted-foreground';
@@ -128,7 +128,7 @@ export function TicketsTable({
 								key={ticket.id}
 								className={cn(
 									'border-border cursor-pointer hover:bg-accent/50',
-									scheduleOverdue && 'bg-destructive/10',
+									scheduleOverdue && '_bg-destructive/10',
 								)}
 								onClick={() => onViewDetails(ticket)}
 							>
@@ -137,9 +137,9 @@ export function TicketsTable({
 										<p className="font-medium text-foreground">
 											{ticket.number}
 										</p>
-										<p className="text-sm text-muted-foreground truncate max-w-[200px]">
+										{/* <p className="text-sm text-muted-foreground truncate max-w-[200px]">
 											{ticket.title}
-										</p>
+										</p> */}
 									</div>
 								</TableCell>
 								<TableCell>
@@ -226,7 +226,16 @@ export function TicketsTable({
 										>
 											{new Date(
 												ticket.scheduledDate,
-											).toLocaleDateString('pt-BR')}
+											).toLocaleDateString('pt-BR')} 
+
+											<p className="text-xs text-muted-foreground"> 
+												{new Date(
+													ticket.scheduledDate!,
+												).toLocaleTimeString('pt-BR', {
+													hour: '2-digit',
+													minute: '2-digit',
+												})}
+											</p>
 										</span>
 									) : (
 										<span className="text-sm text-muted-foreground">

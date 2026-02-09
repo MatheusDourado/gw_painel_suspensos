@@ -33,7 +33,7 @@ interface TicketDetailsModalProps {
 const getPriorityClass = (priority: string) => {
     const normalized = normalizePriority(priority);
     if (normalized === "critica")
-        return "bg-destructive text-destructive-foreground";
+        return "_bg-destructive text-destructive-foreground";
     if (normalized === "alta") return "bg-warning text-foreground";
     if (normalized === "media") return "bg-primary text-primary-foreground";
     if (normalized === "baixa") return "bg-muted text-muted-foreground";

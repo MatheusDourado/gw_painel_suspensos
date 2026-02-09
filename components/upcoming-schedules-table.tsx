@@ -93,7 +93,7 @@ export function UpcomingSchedulesTable({
 								<TableRow
 									key={ticket.id}
 									className={cn(
-										overdue && 'bg-destructive/10',
+										overdue && '_bg-destructive/10',
 									)}
 								>
 									<TableCell>
