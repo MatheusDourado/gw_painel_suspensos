@@ -9,7 +9,6 @@ import {
 } from "@/lib/tickets";
 import { cn } from "@/lib/utils";
 import {
-    AlertTriangle,
     BarChart3,
     Building2,
     Calendar,
@@ -17,6 +16,7 @@ import {
     ChevronDown,
     Clock,
     LayoutDashboard,
+    ShieldAlert,
     Ticket,
 } from "lucide-react";
 import { useState } from "react";
@@ -44,6 +44,11 @@ export function SidebarNav({
         { id: "overview", label: "Visão Geral", icon: LayoutDashboard },
         { id: "tickets", label: "Chamados Suspensos", icon: Ticket },
         { id: "scheduled", label: "Agendamentos", icon: Calendar },
+        {
+            id: "without-changes-48h",
+            label: "Sem Alteração (48 horas)",
+            icon: ShieldAlert,
+        },
         {
             id: "upcoming-schedules",
             label: "Próximos Agendamentos",

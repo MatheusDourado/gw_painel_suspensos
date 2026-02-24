@@ -210,6 +210,8 @@ export default function Dashboard() {
 											'Chamados Suspensos'}
 										{activeTab === 'scheduled' &&
 											'Agendamentos'}
+										{activeTab === 'without-changes-48h' &&
+											'Sem modificações (Últimas 48h)'}
 										{activeTab === 'upcoming-schedules' &&
 											'Próximos Agendamentos'}
 										{activeTab === 'analytics' &&
@@ -309,6 +311,7 @@ export default function Dashboard() {
 							onSchedule={handleSchedule}
 							onViewDetails={handleViewDetails}
 							onAddNote={handleAddNote}
+							useDiffUltimaAtualizacao
 						/>
 					</div>
 				)}
@@ -356,7 +359,23 @@ export default function Dashboard() {
 						/>
 					</div>
 				)}
-
+				{activeTab === 'without-changes-48h' && (
+					<div className="space-y-6">
+						<TicketsTable
+							selectedEnvironment={selectedEnvironment}
+							tickets={tickets.filter(
+								(ticket) =>
+									ticket.semalteracao_48hs
+										?.trim()
+										.toUpperCase() === 'SIM',
+							)}
+							onSchedule={handleSchedule}
+							onViewDetails={handleViewDetails}
+							onAddNote={handleAddNote}
+							useDiffUltimaAtualizacao
+						/>
+					</div>
+				)}
 				{activeTab === 'analytics' && (
 					<AnalyticsView tickets={tickets} />
 				)}

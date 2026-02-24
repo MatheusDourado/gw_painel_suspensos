@@ -11,6 +11,8 @@ type CitSmartTicketPayload = {
     analista?: string;
     equipe?: string;
     status?: string;
+    semalteracao_48hs?: string;
+    diff_ultima_atualizacao?: string;
 };
 
 type CitSmartSchedulePayload = {
@@ -76,6 +78,8 @@ const toSuspendedTicket = (item: CitSmartTicketPayload): SuspendedTicket => {
         client: item.equipe ?? "Sem equipe",
         slaDeadline: slaDeadline.toISOString(),
         notes: item.motivo_suspensao?.trim() ?? undefined,
+        semalteracao_48hs: item.semalteracao_48hs ?? "N/A",
+        diff_ultima_atualizacao: item.diff_ultima_atualizacao ?? "N/A"
     };
 };
 

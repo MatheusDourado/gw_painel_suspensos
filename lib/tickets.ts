@@ -30,6 +30,8 @@ export interface SuspendedTicket {
     slaDeadline: string;
     notes?: string;
     notesList?: Note[];
+    semalteracao_48hs?: string;
+    diff_ultima_atualizacao?: string;
 }
 
 export const getEnvironments = (tickets: SuspendedTicket[]) => {

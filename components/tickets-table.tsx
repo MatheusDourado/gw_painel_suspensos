@@ -36,6 +36,7 @@ interface TicketsTableProps {
 	onViewDetails: (ticket: SuspendedTicket) => void;
 	onAddNote: (ticket: SuspendedTicket) => void;
 	showReason?: boolean;
+	useDiffUltimaAtualizacao?: boolean;
 }
 
 const getPriorityClass = (priority: string) => {
@@ -68,10 +69,12 @@ export function TicketsTable({
 	onViewDetails,
 	onAddNote,
 	showReason = true,
+	useDiffUltimaAtualizacao = false,
 }: TicketsTableProps) {
 	const filteredTickets = selectedEnvironment
 		? tickets.filter((t) => t.environment === selectedEnvironment)
 		: tickets;
+	const columnsCount = showReason ? 9 : 8;
 
 	const isOverdue = (deadline: string) => {
 		return new Date(deadline) < new Date();
@@ -109,7 +112,9 @@ export function TicketsTable({
 							Dias Aberto
 						</TableHead>
 						<TableHead className="text-muted-foreground">
-							SLA
+							{useDiffUltimaAtualizacao
+								? 'Última atualização'
+								: 'SLA'}
 						</TableHead>
 						<TableHead className="text-muted-foreground">
 							Agendamento
@@ -118,6 +123,16 @@ export function TicketsTable({
 					</TableRow>
 				</TableHeader>
 				<TableBody>
+					{filteredTickets.length === 0 && (
+						<TableRow className="border-border hover:bg-transparent">
+							<TableCell
+								colSpan={columnsCount}
+								className="h-24 text-center text-muted-foreground"
+							>
+								Nenhum registro encontrado.
+							</TableCell>
+						</TableRow>
+					)}
 					{filteredTickets.map((ticket) => {
 						const scheduleOverdue = isScheduleOverdue(
 							ticket.scheduledDate,
@@ -196,23 +211,30 @@ export function TicketsTable({
 									</span>
 								</TableCell>
 								<TableCell>
-									<div className="flex items-center gap-1">
-										{isOverdue(ticket.slaDeadline) && (
-											<AlertCircle className="h-4 w-4 text-destructive" />
-										)}
-										<span
-											className={cn(
-												'text-sm',
-												isOverdue(ticket.slaDeadline)
-													? 'text-destructive'
-													: 'text-muted-foreground',
-											)}
-										>
-											{new Date(
-												ticket.slaDeadline,
-											).toLocaleDateString('pt-BR')}
+									{useDiffUltimaAtualizacao ? (
+										<span className="text-sm text-muted-foreground">
+											{ticket.diff_ultima_atualizacao ??
+												'-'}
 										</span>
-									</div>
+									) : (
+										<div className="flex items-center gap-1">
+											{isOverdue(ticket.slaDeadline) && (
+												<AlertCircle className="h-4 w-4 text-destructive" />
+											)}
+											<span
+												className={cn(
+													'text-sm',
+													isOverdue(ticket.slaDeadline)
+														? 'text-destructive'
+														: 'text-muted-foreground',
+												)}
+											>
+												{new Date(
+													ticket.slaDeadline,
+												).toLocaleDateString('pt-BR')}
+											</span>
+										</div>
+									)}
 								</TableCell>
 								<TableCell>
 									{ticket.scheduledDate ? (
