@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { UpcomingSchedulesTable } from '@/components/upcoming-schedules-table';
 import { getEnvironments, type SuspendedTicket } from '@/lib/tickets';
 import { Maximize2, Minimize2 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 export default function Dashboard() {
 	const [activeTab, setActiveTab] = useState('overview');
@@ -33,28 +33,37 @@ export default function Dashboard() {
 	const [ticketsError, setTicketsError] = useState<string | null>(null);
 	const [isFullScreen, setIsFullScreen] = useState(false);
 
-	const loadTickets = async () => {
-		setTicketsLoading(true);
-		setTicketsError(null);
-		try {
-			const response = await fetch('/api/tickets', { cache: 'no-store' });
-			if (!response.ok) {
-				throw new Error(`Erro ${response.status}`);
+	const loadTickets = useCallback(
+		async ({ showLoading = true }: { showLoading?: boolean } = {}) => {
+			if (showLoading) {
+				setTicketsLoading(true);
 			}
-			const data = (await response.json()) as {
-				tickets?: SuspendedTicket[];
-			};
-			setTickets(data.tickets ?? []);
-		} catch (error) {
-			setTicketsError(
-				error instanceof Error
-					? error.message
-					: 'Falha ao carregar tickets',
-			);
-		} finally {
-			setTicketsLoading(false);
-		}
-	};
+			setTicketsError(null);
+			try {
+				const response = await fetch('/api/tickets', {
+					cache: 'no-store',
+				});
+				if (!response.ok) {
+					throw new Error(`Erro ${response.status}`);
+				}
+				const data = (await response.json()) as {
+					tickets?: SuspendedTicket[];
+				};
+				setTickets(data.tickets ?? []);
+			} catch (error) {
+				setTicketsError(
+					error instanceof Error
+						? error.message
+						: 'Falha ao carregar tickets',
+				);
+			} finally {
+				if (showLoading) {
+					setTicketsLoading(false);
+				}
+			}
+		},
+		[],
+	);
 
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
@@ -71,7 +80,11 @@ export default function Dashboard() {
 
 	useEffect(() => {
 		void loadTickets();
-	}, []);
+		const intervalId = window.setInterval(() => {
+			void loadTickets({ showLoading: false });
+		}, 300000);
+		return () => window.clearInterval(intervalId);
+	}, [loadTickets]);
 
 	const environments = useMemo(() => getEnvironments(tickets), [tickets]);
 
