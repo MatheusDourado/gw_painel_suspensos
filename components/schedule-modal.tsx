@@ -36,25 +36,56 @@ interface ScheduleModalProps {
     ) => void;
 }
 
+type ScheduleFormState = {
+    date: string;
+    time: string;
+    serviceType: string;
+    notes: string;
+};
+
+const toDateInputValue = (value?: string) => {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+};
+
+const toTimeInputValue = (value?: string) => {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    return `${hours}:${minutes}`;
+};
+
+const getInitialFormState = (ticket: SuspendedTicket | null): ScheduleFormState => ({
+    date: toDateInputValue(ticket?.scheduledDate),
+    time: toTimeInputValue(ticket?.scheduledDate),
+    serviceType: ticket?.scheduleServiceType ?? "",
+    notes: ticket?.scheduleObservation ?? ticket?.notes ?? "",
+});
+
 export function ScheduleModal({
     ticket,
     open,
     onClose,
     onConfirm,
 }: ScheduleModalProps) {
-    const [date, setDate] = useState("");
-    const [time, setTime] = useState("");
-    const [serviceType, setServiceType] = useState("");
-    const [notes, setNotes] = useState("");
+    const [form, setForm] = useState<ScheduleFormState>(() =>
+        getInitialFormState(ticket),
+    );
+    const hasExistingSchedule = Boolean(ticket?.scheduleId || ticket?.scheduledDate);
 
     if (!ticket) return null;
+    const { date, time, serviceType, notes } = form;
 
     const handleConfirm = () => {
         onConfirm(date, time, serviceType, notes);
-        setDate("");
-        setTime("");
-        setServiceType("");
-        setNotes("");
+        setForm(getInitialFormState(ticket));
         onClose();
     };
 
@@ -64,7 +95,9 @@ export function ScheduleModal({
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <Calendar className="h-5 w-5 text-primary" />
-                        Agendar Atendimento
+                        {hasExistingSchedule
+                            ? "Editar Agendamento"
+                            : "Agendar Atendimento"}
                     </DialogTitle>
                     <DialogDescription>
                         Configure o agendamento para o chamado {ticket.number}
@@ -107,7 +140,12 @@ export function ScheduleModal({
                                 id="date"
                                 type="date"
                                 value={date}
-                                onChange={(e) => setDate(e.target.value)}
+                                onChange={(e) =>
+                                    setForm((current) => ({
+                                        ...current,
+                                        date: e.target.value,
+                                    }))
+                                }
                                 className="bg-secondary"
                             />
                         </div>
@@ -117,7 +155,12 @@ export function ScheduleModal({
                                 id="time"
                                 type="time"
                                 value={time}
-                                onChange={(e) => setTime(e.target.value)}
+                                onChange={(e) =>
+                                    setForm((current) => ({
+                                        ...current,
+                                        time: e.target.value,
+                                    }))
+                                }
                                 className="bg-secondary"
                             />
                         </div>
@@ -128,7 +171,12 @@ export function ScheduleModal({
                         <Label>Tipo de Serviço</Label>
                         <Select
                             value={serviceType}
-                            onValueChange={setServiceType}
+                            onValueChange={(value) =>
+                                setForm((current) => ({
+                                    ...current,
+                                    serviceType: value,
+                                }))
+                            }
                         >
                             <SelectTrigger className="bg-secondary">
                                 <SelectValue placeholder="Selecione o tipo de serviço" />
@@ -160,7 +208,12 @@ export function ScheduleModal({
                             id="notes"
                             placeholder="Adicione observações sobre o agendamento..."
                             value={notes}
-                            onChange={(e) => setNotes(e.target.value)}
+                            onChange={(e) =>
+                                setForm((current) => ({
+                                    ...current,
+                                    notes: e.target.value,
+                                }))
+                            }
                             className="bg-secondary min-h-[80px]"
                         />
                     </div>
@@ -175,7 +228,9 @@ export function ScheduleModal({
                         disabled={!date || !time || !serviceType}
                     >
                         <Calendar className="mr-2 h-4 w-4" />
-                        Confirmar Agendamento
+                        {hasExistingSchedule
+                            ? "Salvar Alterações"
+                            : "Confirmar Agendamento"}
                     </Button>
                 </DialogFooter>
             </DialogContent>

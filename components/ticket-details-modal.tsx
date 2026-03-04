@@ -9,7 +9,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
-import type { SuspendedTicket } from "@/lib/tickets";
+import type { Note, SuspendedTicket } from "@/lib/tickets";
 import { normalizePriority, normalizeStatus } from "@/lib/tickets";
 import { cn } from "@/lib/utils";
 import {
@@ -17,6 +17,7 @@ import {
     Building2,
     Calendar,
     Clock,
+    FilePenLine,
     FileText,
     MessageSquare,
     User,
@@ -28,6 +29,7 @@ interface TicketDetailsModalProps {
     onClose: () => void;
     onSchedule: () => void;
     onAddNote: () => void;
+    onEditNote: (note: Note) => void;
 }
 
 const getPriorityClass = (priority: string) => {
@@ -59,6 +61,7 @@ export function TicketDetailsModal({
     onClose,
     onSchedule,
     onAddNote,
+    onEditNote,
 }: TicketDetailsModalProps) {
     if (!ticket) return null;
 
@@ -313,13 +316,26 @@ export function TicketDetailsModal({
                                 <div className="divide-y divide-border">
                                     {ticket.notesList.map((note, index) => (
                                         <div
-                                            key={index}
+                                            key={note.id ?? `${note.createdAt}-${index}`}
                                             className="p-3 hover:bg-muted/30 transition-colors"
                                         >
                                             <div className="flex items-center justify-between mb-1">
-                                                <span className="text-xs font-semibold text-primary">
-                                                    {note.author}
-                                                </span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xs font-semibold text-primary">
+                                                        {note.author}
+                                                    </span>
+                                                    {typeof note.id === "number" && (
+                                                        <Button
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            className="h-6 px-2 text-[10px]"
+                                                            onClick={() => onEditNote(note)}
+                                                        >
+                                                            <FilePenLine className="mr-1 h-3 w-3" />
+                                                            Editar
+                                                        </Button>
+                                                    )}
+                                                </div>
                                                 <span className="text-[10px] text-muted-foreground">
                                                     {new Date(
                                                         note.createdAt,
@@ -360,12 +376,12 @@ export function TicketDetailsModal({
                         <MessageSquare className="mr-2 h-4 w-4" />
                         Adicionar Nota
                     </Button>
-                    {!ticket.scheduledDate && (
-                        <Button onClick={onSchedule}>
-                            <Calendar className="mr-2 h-4 w-4" />
-                            Agendar Atendimento
-                        </Button>
-                    )}
+                    <Button onClick={onSchedule}>
+                        <Calendar className="mr-2 h-4 w-4" />
+                        {ticket.scheduledDate
+                            ? "Editar Agendamento"
+                            : "Agendar Atendimento"}
+                    </Button>
                 </div>
             </DialogContent>
         </Dialog>

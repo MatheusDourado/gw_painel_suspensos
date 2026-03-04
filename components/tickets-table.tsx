@@ -298,7 +298,9 @@ export function TicketsTable({
 												}}
 											>
 												<Calendar className="mr-2 h-4 w-4" />
-												Agendar
+												{ticket.scheduledDate
+													? 'Editar Agendamento'
+													: 'Agendar'}
 											</DropdownMenuItem>
 											<DropdownMenuItem
 												onClick={(e) => {

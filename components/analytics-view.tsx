@@ -92,7 +92,11 @@ export function AnalyticsView({ tickets }: AnalyticsViewProps) {
         ) / totalTickets
     ).toFixed(1);
 
-    const now = Date.now();
+    const now = tickets.reduce((latest, ticket) => {
+        const suspendedAt = getDate(ticket.suspendedAt)?.getTime() ?? 0;
+        const scheduledAt = getDate(ticket.scheduledDate)?.getTime() ?? 0;
+        return Math.max(latest, suspendedAt, scheduledAt);
+    }, 0);
     const currentStart = now - 7 * DAY_MS;
     const previousStart = now - 14 * DAY_MS;
 

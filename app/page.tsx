@@ -14,7 +14,11 @@ import { ToastNotification } from '@/components/toast-notification';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { UpcomingSchedulesTable } from '@/components/upcoming-schedules-table';
-import { getEnvironments, type SuspendedTicket } from '@/lib/tickets';
+import {
+	getEnvironments,
+	type Note,
+	type SuspendedTicket,
+} from '@/lib/tickets';
 import { Maximize2, Minimize2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -86,6 +90,17 @@ export default function Dashboard() {
 		return () => window.clearInterval(intervalId);
 	}, [loadTickets]);
 
+	useEffect(() => {
+		if (!selectedTicket) return;
+		const updatedTicket = tickets.find(
+			(ticket) => ticket.number === selectedTicket.number,
+		);
+		if (!updatedTicket) return;
+		if (updatedTicket !== selectedTicket) {
+			setSelectedTicket(updatedTicket);
+		}
+	}, [tickets, selectedTicket]);
+
 	const environments = useMemo(() => getEnvironments(tickets), [tickets]);
 
 	const handleSchedule = (ticket: SuspendedTicket) => {
@@ -117,47 +132,13 @@ export default function Dashboard() {
 				{
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ date, time, serviceType, notes }),
-				},
-			);
-			if (!response.ok) {
-				const errorBody = (await response.json().catch(() => ({}))) as {
-					error?: string;
-					details?: string;
-				};
-				throw new Error(
-					errorBody.details ||
-						errorBody.error ||
-						`Erro ${response.status}`,
-				);
-			}
-
-			await loadTickets();
-			setToast({
-				show: true,
-				message: `Agendamento confirmado para ${new Date(date).toLocaleDateString('pt-BR')} as ${time}`,
-			});
-		} catch (error) {
-			setToast({
-				show: true,
-				message: `Falha ao salvar agendamento: ${error instanceof Error ? error.message : 'Erro inesperado'}`,
-			});
-		}
-	};
-
-	const handleAddNote = async (ticket: SuspendedTicket) => {
-		const noteText = window.prompt(`Adicionar nota para ${ticket.number}:`);
-		if (!noteText || !noteText.trim()) return;
-
-		try {
-			const response = await fetch(
-				`/api/tickets/${ticket.number}/notes`,
-				{
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({
-						text: noteText.trim(),
-						type: 'interna',
+						date,
+						time,
+						serviceType,
+						notes,
+						scheduleId: selectedTicket.scheduleId,
+						scheduleNoteId: selectedTicket.scheduleNoteId,
 					}),
 				},
 			);
@@ -174,7 +155,66 @@ export default function Dashboard() {
 			}
 
 			await loadTickets();
-			setToast({ show: true, message: 'Nota salva com sucesso.' });
+			const actionText = selectedTicket.scheduledDate
+				? 'Agendamento atualizado'
+				: 'Agendamento confirmado';
+			setToast({
+				show: true,
+				message: `${actionText} para ${new Date(date).toLocaleDateString('pt-BR')} as ${time}`,
+			});
+		} catch (error) {
+			setToast({
+				show: true,
+				message: `Falha ao salvar agendamento: ${error instanceof Error ? error.message : 'Erro inesperado'}`,
+			});
+		}
+	};
+
+	const handleAddNote = async (
+		ticket: SuspendedTicket,
+		noteToEdit?: Note,
+	) => {
+		const isEditing = typeof noteToEdit?.id === 'number';
+		const promptMessage = isEditing
+			? `Editar nota #${noteToEdit.id} de ${ticket.number}:`
+			: `Adicionar nota para ${ticket.number}:`;
+		const noteText = window.prompt(promptMessage, noteToEdit?.text ?? '');
+		if (!noteText || !noteText.trim()) return;
+
+		try {
+			const response = await fetch(
+				`/api/tickets/${ticket.number}/notes`,
+				{
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						text: noteText.trim(),
+						type: noteToEdit?.type ?? 'interna',
+						origin: noteToEdit?.origin ?? 'painel_suspensos',
+						noteId: noteToEdit?.id,
+						scheduleId: noteToEdit?.scheduleId,
+					}),
+				},
+			);
+			if (!response.ok) {
+				const errorBody = (await response.json().catch(() => ({}))) as {
+					error?: string;
+					details?: string;
+				};
+				throw new Error(
+					errorBody.details ||
+						errorBody.error ||
+						`Erro ${response.status}`,
+				);
+			}
+
+			await loadTickets();
+			setToast({
+				show: true,
+				message: isEditing
+					? 'Nota atualizada com sucesso.'
+					: 'Nota salva com sucesso.',
+			});
 		} catch (error) {
 			setToast({
 				show: true,
@@ -395,6 +435,14 @@ export default function Dashboard() {
 			</main>
 
 			<ScheduleModal
+				key={
+					selectedTicket
+						? [
+								selectedTicket.number,
+								scheduleModalOpen ? 'open' : 'closed',
+							].join(':')
+						: 'schedule-modal-empty'
+				}
 				ticket={selectedTicket}
 				open={scheduleModalOpen}
 				onClose={() => setScheduleModalOpen(false)}
@@ -409,6 +457,10 @@ export default function Dashboard() {
 				onAddNote={() =>
 					selectedTicket && void handleAddNote(selectedTicket)
 				}
+				onEditNote={(note) => {
+					if (!selectedTicket) return;
+					void handleAddNote(selectedTicket, note);
+				}}
 			/>
 
 			<ToastNotification

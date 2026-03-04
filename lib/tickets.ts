@@ -7,11 +7,13 @@ export type TicketStatus =
 export type Priority = "Critica" | "Alta" | "Media" | "Baixa" | string;
 
 export interface Note {
+    id?: number;
     text: string;
     author: string;
     type: string;
     createdAt: string;
     origin?: string;
+    scheduleId?: number;
 }
 
 export interface SuspendedTicket {
@@ -30,6 +32,10 @@ export interface SuspendedTicket {
     slaDeadline: string;
     notes?: string;
     notesList?: Note[];
+    scheduleId?: number;
+    scheduleServiceType?: string;
+    scheduleObservation?: string;
+    scheduleNoteId?: number;
     semalteracao_48hs?: string;
     diff_ultima_atualizacao?: string;
 }

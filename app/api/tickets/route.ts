@@ -1,4 +1,5 @@
 import { citSmartRequest, createCitSmartSession } from "@/lib/citsmart";
+import { createRequestLogger, toErrorLogMeta } from "@/lib/logger";
 import type { SuspendedTicket } from "@/lib/tickets";
 import { NextResponse } from "next/server";
 
@@ -20,11 +21,13 @@ type CitSmartSchedulePayload = {
     ticket_numero?: string;
     data_hora_agendada?: string;
     observacao?: string;
+    tipo_servico?: string;
 };
 
 type CitSmartNotePayload = {
     id_nota?: number;
     ticket_numero?: string;
+    id_agendamento?: number;
     texto_nota?: string;
     criado_em?: string;
     criado_por?: string;
@@ -130,9 +133,12 @@ const toSuspendedTicket = (item: CitSmartTicketPayload): SuspendedTicket => {
     };
 };
 
-export async function GET() {
+export async function GET(request: Request) {
+    const logger = createRequestLogger("API_TICKETS_GET", request);
     try {
+        logger.info("Iniciando consulta de tickets no CITSMART.");
         const session = await createCitSmartSession();
+        logger.debug("Sessão CITSMART criada.");
 
         const [ticketsResult, schedulesResult, notesResult] = await Promise.all(
             [
@@ -157,6 +163,11 @@ export async function GET() {
                 }),
             ],
         );
+        logger.debug("Dados brutos recebidos do CITSMART.", {
+            scheduleCount: schedulesResult.payload?.length ?? 0,
+            noteCount: notesResult.payload?.length ?? 0,
+            flowOutputCount: ticketsResult.outputVariables?.length ?? 0,
+        });
 
         const scheduleByTicket = new Map<string, CitSmartSchedulePayload>();
         for (const schedule of schedulesResult.payload ?? []) {
@@ -180,6 +191,9 @@ export async function GET() {
             ticketsResult,
             "_response",
         );
+        logger.debug("Payload de tickets processado.", {
+            ticketPayloadCount: ticketsPayload.length,
+        });
         const tickets = ticketsPayload.map((item) => {
             const baseTicket = toSuspendedTicket(item);
             const schedule = scheduleByTicket.get(baseTicket.number);
@@ -187,11 +201,13 @@ export async function GET() {
             const allNotes = (notesResult.payload ?? [])
                 .filter((n) => n.ticket_numero === baseTicket.number)
                 .map((n) => ({
+                    id: n.id_nota,
                     text: n.texto_nota ?? "",
                     author: n.criado_por ?? "Sistema",
                     type: n.tipo_nota ?? "interna",
                     createdAt: n.criado_em ?? new Date().toISOString(),
                     origin: n.origem,
+                    scheduleId: n.id_agendamento,
                 }))
                 .sort((a, b) => {
                     const dateA = toDate(a.createdAt)?.getTime() ?? 0;
@@ -205,6 +221,7 @@ export async function GET() {
                 );
                 if (!scheduleNoteExists) {
                     allNotes.unshift({
+                        id: undefined,
                         text: schedule.observacao,
                         author: "Agendamento",
                         type: "agendamento",
@@ -212,6 +229,7 @@ export async function GET() {
                             schedule.data_hora_agendada ??
                             new Date().toISOString(),
                         origin: "agendamento",
+                        scheduleId: schedule.id_agendamento,
                     });
                 }
             }
@@ -226,6 +244,27 @@ export async function GET() {
                 merged.status = "Agendado";
             }
 
+            if (typeof schedule?.id_agendamento === "number") {
+                merged.scheduleId = schedule.id_agendamento;
+            }
+
+            if (schedule?.tipo_servico) {
+                merged.scheduleServiceType = schedule.tipo_servico;
+            }
+
+            if (schedule?.observacao) {
+                merged.scheduleObservation = schedule.observacao;
+            }
+
+            const scheduleNote = allNotes.find(
+                (note) =>
+                    note.origin?.toLowerCase() === "agendamento" &&
+                    (!merged.scheduleId || note.scheduleId === merged.scheduleId),
+            );
+            if (typeof scheduleNote?.id === "number") {
+                merged.scheduleNoteId = scheduleNote.id;
+            }
+
             if (allNotes.length > 0) {
                 merged.notes = allNotes[0].text;
             } else if (schedule?.observacao) {
@@ -234,9 +273,15 @@ export async function GET() {
 
             return merged;
         });
+        logger.info("Consulta de tickets concluída com sucesso.", {
+            totalTickets: tickets.length,
+        });
 
         return NextResponse.json({ tickets });
     } catch (error) {
+        logger.error("Falha ao carregar relatório do CITSMART.", {
+            error: toErrorLogMeta(error),
+        });
         const details =
             error instanceof Error
                 ? error.message
