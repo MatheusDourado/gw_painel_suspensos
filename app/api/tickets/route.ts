@@ -39,11 +39,58 @@ type CitSmartResponse<T> = {
     payload?: T[];
 };
 
+type CitSmartFlowVariable = {
+    name?: string;
+    variableType?: string;
+    value?: unknown;
+};
+
+type CitSmartFlowResponse = {
+    outputVariables?: CitSmartFlowVariable[];
+};
+
 const toDate = (value?: string) => {
     if (!value) return null;
     const parsed = new Date(value);
     if (Number.isNaN(parsed.getTime())) return null;
     return parsed;
+};
+
+const parseFlowOutputArray = <T>(
+    response: CitSmartFlowResponse,
+    variableName: string,
+): T[] => {
+    const output = response.outputVariables?.find(
+        (variable) => variable.name === variableName,
+    );
+
+    if (!output || output.value == null) return [];
+
+    if (Array.isArray(output.value)) {
+        return output.value as T[];
+    }
+
+    if (typeof output.value === "string") {
+        let parsed: unknown;
+        try {
+            parsed = JSON.parse(output.value);
+        } catch {
+            throw new Error(
+                `A variavel ${variableName} do fluxo CITSMART nao contem JSON valido.`,
+            );
+        }
+
+        if (!Array.isArray(parsed)) {
+            throw new Error(
+                `A variavel ${variableName} do fluxo CITSMART nao retornou uma lista.`,
+            );
+        }
+        return parsed as T[];
+    }
+
+    throw new Error(
+        `A variavel ${variableName} do fluxo CITSMART retornou formato nao suportado.`,
+    );
 };
 
 const calculateDaysOpen = (openedAt: Date) => {
@@ -89,9 +136,16 @@ export async function GET() {
 
         const [ticketsResult, schedulesResult, notesResult] = await Promise.all(
             [
-                citSmartRequest<CitSmartResponse<CitSmartTicketPayload>>({
+                citSmartRequest<CitSmartFlowResponse>({
                     session,
-                    path: "/cit-esi-web/rest/dynamic/relatorios/view_unificada_tickets_suspenso_service_desk.json",
+                    path: "/cit-esi-web/rest/esi/start.json",
+                    method: "POST",
+                    body: {
+                        flowName: "execucao_sql_banconoc",
+                        inputMap: {
+                            _sql: "SELECT * FROM view_unificada_tickets_suspenso_cco",
+                        },
+                    },
                 }),
                 citSmartRequest<CitSmartResponse<CitSmartSchedulePayload>>({
                     session,
@@ -122,7 +176,11 @@ export async function GET() {
             }
         }
 
-        const tickets = (ticketsResult.payload ?? []).map((item) => {
+        const ticketsPayload = parseFlowOutputArray<CitSmartTicketPayload>(
+            ticketsResult,
+            "_response",
+        );
+        const tickets = ticketsPayload.map((item) => {
             const baseTicket = toSuspendedTicket(item);
             const schedule = scheduleByTicket.get(baseTicket.number);
 
