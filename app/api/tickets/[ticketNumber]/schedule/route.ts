@@ -58,6 +58,17 @@ const toTimestamp = (value?: string) => {
     return parsed.getTime();
 };
 
+const nowFormatted = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    const hours = String(now.getHours()).padStart(2, "0");
+    const minutes = String(now.getMinutes()).padStart(2, "0");
+    const seconds = String(now.getSeconds()).padStart(2, "0");
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+};
+
 const pickLatestSchedule = (
     payload: CitSmartSchedulePayload[],
     ticketNumber: string,
@@ -148,8 +159,9 @@ export async function POST(
             );
         }
         // Usa a string local diretamente (sem .toISOString() que converte para UTC e
-        // acrescenta 3h em servidores configurados em UTC quando o usuário está em UTC-3)
-        const scheduledAtFormatted = localDateTimeStr;
+        // acrescenta 3h em servidores configurados em UTC quando o usuário está em UTC-3).
+        // Formato PostgreSQL: 'yyyy-mm-dd hh:mm:ss' (espaço no lugar do T)
+        const scheduledAtFormatted = localDateTimeStr.replace("T", " ");
 
         const session = await createCitSmartSession();
         const actor =
@@ -182,6 +194,7 @@ export async function POST(
             });
         }
 
+        const now = nowFormatted();
         const scheduleSaveResponse =
             await citSmartRequest<CitSmartResponse<CitSmartSchedulePayload>>({
                 session,
@@ -194,7 +207,12 @@ export async function POST(
                     tipo_servico: body.serviceType,
                     observacao: body.notes ?? "",
                     status_ticket_destino: "Agendado",
+                    ...(!scheduleId
+                        ? { criado_por: actor, criado_em: now }
+                        : {}),
                     atualizado_por: actor,
+                    atualizado_em: now,
+                    ativo: true,
                 },
             });
 
@@ -244,7 +262,11 @@ export async function POST(
                     texto_nota: body.notes.trim(),
                     tipo_nota: "interna",
                     origem: "agendamento",
-                    criado_por: actor,
+                    ...(!scheduleNoteId
+                        ? { criado_por: actor, criado_em: now }
+                        : {}),
+                    atualizado_por: actor,
+                    atualizado_em: now,
                 },
             });
             logger.info("Nota vinculada ao agendamento salva/atualizada.", {
