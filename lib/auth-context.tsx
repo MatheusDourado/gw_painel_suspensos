@@ -64,8 +64,19 @@ const SERVICEDESK_ENVIRONMENT_SET = new Set(
     SERVICEDESK_ENVIRONMENTS.map((environment) => normalizeValue(environment)),
 );
 
-export const canAccessEnvironment = (role: UserRole, environment: string) => {
-    if (role === "noc") return true;
+const isServiceDeskRole = (role: string) => {
+    const normalizedRole = normalizeValue(role);
+    return (
+        normalizedRole === "SERVICEDESK" ||
+        normalizedRole === "USER_SERVICEDESK"
+    );
+};
+
+export const canAccessEnvironment = (
+    role: UserRole | string,
+    environment: string,
+) => {
+    if (!isServiceDeskRole(role)) return true;
     return SERVICEDESK_ENVIRONMENT_SET.has(normalizeValue(environment));
 };
 
