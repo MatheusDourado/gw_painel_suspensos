@@ -15,7 +15,7 @@ import { ToastNotification } from '@/components/toast-notification';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { UpcomingSchedulesTable } from '@/components/upcoming-schedules-table';
-import { useAuth, SERVICEDESK_ENVIRONMENTS } from '@/lib/auth-context';
+import { canAccessEnvironment, useAuth } from '@/lib/auth-context';
 import {
 	getEnvironments,
 	type Note,
@@ -115,12 +115,8 @@ function DashboardContent() {
 	}, [tickets, selectedTicket]);
 
 	const visibleTickets = useMemo(() => {
-		if (user?.role === 'servicedesk') {
-			return tickets.filter((t) =>
-				SERVICEDESK_ENVIRONMENTS.includes(t.environment),
-			);
-		}
-		return tickets;
+		if (!user) return [];
+		return tickets.filter((t) => canAccessEnvironment(user.role, t.environment));
 	}, [tickets, user]);
 
 	const environments = useMemo(() => getEnvironments(visibleTickets), [visibleTickets]);

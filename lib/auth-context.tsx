@@ -23,20 +23,51 @@ interface AuthContextType {
     logout: () => void;
 }
 
-const CREDENTIALS: Record<string, { password: string; role: UserRole; displayName: string }> = {
-    user_servicedesk: {
-        password: process.env.NEXT_PUBLIC_AUTH_SERVICEDESK_PASSWORD ?? "",
-        role: "servicedesk",
-        displayName: "Service Desk",
-    },
-    user_noc: {
-        password: process.env.NEXT_PUBLIC_AUTH_NOC_PASSWORD ?? "",
-        role: "noc",
-        displayName: "NOC",
-    },
+interface CredentialConfig {
+    password: string;
+    role: UserRole;
+    displayName: string;
+    canonicalUsername: string;
+}
+
+const SERVICE_DESK_CREDENTIAL: CredentialConfig = {
+    password: process.env.NEXT_PUBLIC_AUTH_SERVICEDESK_PASSWORD ?? "",
+    role: "servicedesk",
+    displayName: "Service Desk",
+    canonicalUsername: "servicedesk",
 };
 
+const NOC_CREDENTIAL: CredentialConfig = {
+    password: process.env.NEXT_PUBLIC_AUTH_NOC_PASSWORD ?? "",
+    role: "noc",
+    displayName: "NOC",
+    canonicalUsername: "noc",
+};
+
+const CREDENTIALS: Record<string, CredentialConfig> = {
+    servicedesk: SERVICE_DESK_CREDENTIAL,
+    user_servicedesk: SERVICE_DESK_CREDENTIAL,
+    noc: NOC_CREDENTIAL,
+    user_noc: NOC_CREDENTIAL,
+};
+
+const normalizeValue = (value: string) =>
+    value
+        .trim()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toUpperCase();
+
 export const SERVICEDESK_ENVIRONMENTS = ["COPASA", "MCTI", "CAOA", "MEC"];
+
+const SERVICEDESK_ENVIRONMENT_SET = new Set(
+    SERVICEDESK_ENVIRONMENTS.map((environment) => normalizeValue(environment)),
+);
+
+export const canAccessEnvironment = (role: UserRole, environment: string) => {
+    if (role === "noc") return true;
+    return SERVICEDESK_ENVIRONMENT_SET.has(normalizeValue(environment));
+};
 
 const AUTH_STORAGE_KEY = "gw_painel_auth";
 
@@ -64,9 +95,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, [user]);
 
     const login = useCallback((username: string, password: string): boolean => {
-        const cred = CREDENTIALS[username];
+        const normalizedUsername = username.trim().toLowerCase();
+        const cred = CREDENTIALS[normalizedUsername];
         if (!cred || cred.password !== password) return false;
-        setUser({ username, role: cred.role, displayName: cred.displayName });
+        setUser({
+            username: cred.canonicalUsername,
+            role: cred.role,
+            displayName: cred.displayName,
+        });
         return true;
     }, []);
 
