@@ -15,7 +15,7 @@ import { ToastNotification } from '@/components/toast-notification';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { UpcomingSchedulesTable } from '@/components/upcoming-schedules-table';
-import { useAuth, NOC_ENVIRONMENTS } from '@/lib/auth-context';
+import { useAuth, SERVICEDESK_ENVIRONMENTS } from '@/lib/auth-context';
 import {
 	getEnvironments,
 	type Note,
@@ -115,9 +115,9 @@ function DashboardContent() {
 	}, [tickets, selectedTicket]);
 
 	const visibleTickets = useMemo(() => {
-		if (user?.role === 'noc') {
+		if (user?.role === 'servicedesk') {
 			return tickets.filter((t) =>
-				NOC_ENVIRONMENTS.includes(t.environment),
+				SERVICEDESK_ENVIRONMENTS.includes(t.environment),
 			);
 		}
 		return tickets;

@@ -36,7 +36,7 @@ const CREDENTIALS: Record<string, { password: string; role: UserRole; displayNam
     },
 };
 
-export const NOC_ENVIRONMENTS = ["Paineis N1", "Copasa", "MCTI", "CAOA", "MEC"];
+export const SERVICEDESK_ENVIRONMENTS = ["COPASA", "MCTI", "CAOA", "MEC"];
 
 const AUTH_STORAGE_KEY = "gw_painel_auth";
 
