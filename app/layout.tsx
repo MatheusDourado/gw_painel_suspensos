@@ -10,9 +10,18 @@ const geist = Geist({ subsets: ["latin"] });
 const geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-    title: "Sistema de Chamados Suspensos | ITSM",
-    description: "Painel de acompanhamento gerencial de chamados suspensos",
-    generator: "v0.app",
+    title: "Painel de Chamados Suspensos | Globalweb ITSM",
+    description:
+        "Monitoramento em tempo real de chamados suspensos no ITSM da Globalweb. Acompanhe agendamentos, prioridades e status por ambiente.",
+    keywords: ["ITSM", "chamados", "suspensos", "monitoramento", "Globalweb", "service desk", "NOC"],
+    authors: [{ name: "Globalweb" }],
+    openGraph: {
+        title: "Painel de Chamados Suspensos | Globalweb ITSM",
+        description:
+            "Monitoramento em tempo real de chamados suspensos no ITSM da Globalweb.",
+        type: "website",
+        locale: "pt_BR",
+    },
 };
 
 export default function RootLayout({
