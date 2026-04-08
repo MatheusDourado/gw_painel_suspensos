@@ -4,6 +4,7 @@ import { AnalyticsView } from '@/components/analytics-view';
 import { EnvironmentChart } from '@/components/environment-chart';
 import { Header } from '@/components/header';
 import { KPICards } from '@/components/kpi-cards';
+import { LoginPage } from '@/components/login-page';
 import { ScheduleModal } from '@/components/schedule-modal';
 import { ScheduledList } from '@/components/scheduled-list';
 import { SidebarNav } from '@/components/sidebar-nav';
@@ -14,6 +15,7 @@ import { ToastNotification } from '@/components/toast-notification';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { UpcomingSchedulesTable } from '@/components/upcoming-schedules-table';
+import { useAuth, NOC_ENVIRONMENTS } from '@/lib/auth-context';
 import {
 	getEnvironments,
 	type Note,
@@ -23,6 +25,17 @@ import { Maximize2, Minimize2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 export default function Dashboard() {
+	const { user } = useAuth();
+
+	if (!user) {
+		return <LoginPage />;
+	}
+
+	return <DashboardContent />;
+}
+
+function DashboardContent() {
+	const { user } = useAuth();
 	const [activeTab, setActiveTab] = useState('overview');
 	const [selectedEnvironment, setSelectedEnvironment] = useState<
 		string | null
@@ -101,7 +114,16 @@ export default function Dashboard() {
 		}
 	}, [tickets, selectedTicket]);
 
-	const environments = useMemo(() => getEnvironments(tickets), [tickets]);
+	const visibleTickets = useMemo(() => {
+		if (user?.role === 'noc') {
+			return tickets.filter((t) =>
+				NOC_ENVIRONMENTS.includes(t.environment),
+			);
+		}
+		return tickets;
+	}, [tickets, user]);
+
+	const environments = useMemo(() => getEnvironments(visibleTickets), [visibleTickets]);
 
 	const handleSchedule = (ticket: SuspendedTicket) => {
 		setSelectedTicket(ticket);
@@ -226,7 +248,7 @@ export default function Dashboard() {
 	return (
 		<div className="min-h-screen bg-background">
 			{!isFullScreen && (
-				<Header tickets={tickets} onSelectTicket={handleSearchSelect} />
+				<Header tickets={visibleTickets} onSelectTicket={handleSearchSelect} />
 			)}
 			{!isFullScreen && (
 				<SidebarNav
@@ -235,7 +257,7 @@ export default function Dashboard() {
 					selectedEnvironment={selectedEnvironment}
 					onEnvironmentChange={setSelectedEnvironment}
 					environments={environments}
-					tickets={tickets}
+					tickets={visibleTickets}
 				/>
 			)}
 
@@ -316,17 +338,17 @@ export default function Dashboard() {
 					<div className="space-y-6">
 						<KPICards
 							selectedEnvironment={selectedEnvironment}
-							tickets={tickets}
+							tickets={visibleTickets}
 						/>
 
 						<div className="grid gap-6 md:grid-cols-2">
 							<TimelineChart
-								tickets={tickets}
+								tickets={visibleTickets}
 								selectedEnvironment={selectedEnvironment}
 							/>
 
 							<EnvironmentChart
-								tickets={tickets}
+								tickets={visibleTickets}
 								selectedEnvironment={selectedEnvironment}
 							/>
 						</div>
@@ -338,7 +360,7 @@ export default function Dashboard() {
 								</h2>
 								<TicketsTable
 									selectedEnvironment={selectedEnvironment}
-									tickets={tickets}
+									tickets={visibleTickets}
 									onSchedule={handleSchedule}
 									onViewDetails={handleViewDetails}
 									onAddNote={handleAddNote}
@@ -346,7 +368,7 @@ export default function Dashboard() {
 							</div>
 							<ScheduledList
 								selectedEnvironment={selectedEnvironment}
-								tickets={tickets}
+								tickets={visibleTickets}
 							/>
 						</div>
 					</div>
@@ -356,11 +378,11 @@ export default function Dashboard() {
 					<div className="space-y-6">
 						<KPICards
 							selectedEnvironment={selectedEnvironment}
-							tickets={tickets}
+							tickets={visibleTickets}
 						/>
 						<TicketsTable
 							selectedEnvironment={selectedEnvironment}
-							tickets={tickets}
+							tickets={visibleTickets}
 							onSchedule={handleSchedule}
 							onViewDetails={handleViewDetails}
 							onAddNote={handleAddNote}
@@ -383,7 +405,7 @@ export default function Dashboard() {
 							>
 								<TicketsTable
 									selectedEnvironment={selectedEnvironment}
-									tickets={tickets.filter(
+									tickets={visibleTickets.filter(
 										(t) =>
 											t.status === 'Agendado' ||
 											t.scheduledDate,
@@ -397,7 +419,7 @@ export default function Dashboard() {
 							{!isFullScreen && (
 								<ScheduledList
 									selectedEnvironment={selectedEnvironment}
-									tickets={tickets}
+									tickets={visibleTickets}
 								/>
 							)}
 						</div>
@@ -408,7 +430,7 @@ export default function Dashboard() {
 					<div className="space-y-6">
 						<UpcomingSchedulesTable
 							selectedEnvironment={selectedEnvironment}
-							tickets={tickets}
+							tickets={visibleTickets}
 						/>
 					</div>
 				)}
@@ -416,7 +438,7 @@ export default function Dashboard() {
 					<div className="space-y-6">
 						<TicketsTable
 							selectedEnvironment={selectedEnvironment}
-							tickets={tickets.filter(
+							tickets={visibleTickets.filter(
 								(ticket) =>
 									ticket.semalteracao_48hs
 										?.trim()
@@ -430,7 +452,7 @@ export default function Dashboard() {
 					</div>
 				)}
 				{activeTab === 'analytics' && (
-					<AnalyticsView tickets={tickets} />
+					<AnalyticsView tickets={visibleTickets} />
 				)}
 			</main>
 

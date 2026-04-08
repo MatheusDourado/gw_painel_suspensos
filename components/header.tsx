@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Moon, Search, Sun, X } from "lucide-react";
+import { LogOut, Moon, Search, Sun, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,6 +11,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/lib/auth-context";
 import { useTheme } from "@/lib/theme-context";
 import {
     normalizePriority,
@@ -33,6 +34,7 @@ const getStatusBadgeClass = (status: string) => {
 
 export function Header({ tickets, onSelectTicket }: HeaderProps) {
     const { theme, toggleTheme } = useTheme();
+    const { user, logout } = useAuth();
     const [searchOpen, setSearchOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
 
@@ -89,6 +91,22 @@ export function Header({ tickets, onSelectTicket }: HeaderProps) {
                                 <Moon className="h-5 w-5" />
                             )}
                         </Button>
+
+                        {user && (
+                            <div className="flex items-center gap-2 border-l border-border pl-3">
+                                <span className="text-sm text-muted-foreground">
+                                    {user.displayName}
+                                </span>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={logout}
+                                    title="Sair"
+                                >
+                                    <LogOut className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </header>
